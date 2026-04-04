@@ -1,5 +1,5 @@
 import os
-import time
+import html
 import requests
 
 FEEDLY_REFRESH_TOKEN = os.environ.get("FEEDLY_REFRESH_TOKEN")
@@ -77,8 +77,7 @@ def get_saved_articles(since_timestamp=None):
     data = response.json()
     return data.get("items", [])
 
-
-def extract_url(article):
+def get_article_url(article):
     """Pull the best URL out of a Feedly article object."""
     for key in ("canonical", "alternate"):
         links = article.get(key, [])
@@ -89,3 +88,8 @@ def extract_url(article):
     if origin_id.startswith("http"):
         return origin_id
     return None
+
+def get_article_title(article):
+    """Convert title back to plain text from escaped html"""
+    title = article.get('title', 'Untitled')
+    return html.unescape(title)

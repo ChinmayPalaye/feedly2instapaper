@@ -3,7 +3,7 @@ import os
 import time
 from datetime import datetime
 
-from feedly_utils import get_saved_articles, extract_url
+from feedly_utils import get_saved_articles, get_article_url, get_article_title
 from instapaper_utils import save_to_instapaper
 
 STATE_FILE = "feedly_sync_state.json"
@@ -46,8 +46,8 @@ def sync():
         if article_id in already_synced:
             continue
 
-        url = extract_url(article)
-        title = article.get("title", "Untitled")
+        url = get_article_url(article)
+        title = get_article_title("title", "Untitled")
 
         if not url:
             print(f"   ⚠️  Skipping article with no URL: {title}")
