@@ -3,7 +3,7 @@ import os
 import time
 from datetime import datetime
 
-from feedly_utils import ensure_fresh_token, get_saved_articles, extract_url
+from feedly_utils import get_saved_articles, extract_url
 from instapaper_utils import save_to_instapaper
 
 STATE_FILE = "feedly_sync_state.json"
@@ -26,8 +26,6 @@ def sync():
     state = load_state()
     already_synced = set(state.get("synced_ids", []))
 
-    ensure_fresh_token()
-
     since_ms = None
     if state.get("last_run"):
         last_run_dt = datetime.fromisoformat(state["last_run"])
@@ -45,7 +43,6 @@ def sync():
     for article in articles:
         article_id = article.get("id")
 
-        # Skip if we've already sent this one
         if article_id in already_synced:
             continue
 
@@ -65,10 +62,8 @@ def sync():
         else:
             failed_count += 1
 
-        # Small delay to be polite to the APIs
         time.sleep(0.5)
 
-    # Persist state
     state["synced_ids"] = list(already_synced)
     state["last_run"] = datetime.now().isoformat()
     save_state(state)

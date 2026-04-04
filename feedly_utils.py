@@ -2,9 +2,7 @@ import os
 import time
 import requests
 
-FEEDLY_TOKEN         = os.environ.get("FEEDLY_TOKEN")
 FEEDLY_REFRESH_TOKEN = os.environ.get("FEEDLY_REFRESH_TOKEN")
-FEEDLY_TOKEN_EXPIRY  = int(os.environ.get("FEEDLY_TOKEN_EXPIRY", "0"))
 FEEDLY_USER_ID       = os.environ.get("FEEDLY_USER_ID")
 
 STATE_FILE = "feedly_sync_state.json"
@@ -13,19 +11,13 @@ TOKEN_REFRESH_THRESHOLD_SECS = 7 * 24 * 60 * 60  # 1 week
 
 FEEDLY_BASE = "https://cloud.feedly.com/v3"
 
-# These may be updated at runtime after a token refresh
-_feedly_token = FEEDLY_TOKEN
-_feedly_token_expiry = FEEDLY_TOKEN_EXPIRY
-def refresh_feedly_token():
+def create_feedly_token():
     """
     Use the refresh token to get a new access token from Feedly.
     Feedly uses standard OAuth2: POST to the token endpoint with
     grant_type=refresh_token. Returns the new token on success, or
     None if the refresh fails.
     """
-    global _feedly_token, _feedly_token_expiry
-
-    print("   🔑 Feedly token expiring soon — refreshing...")
 
     response = requests.post(
         f"{FEEDLY_BASE}/auth/token",
@@ -45,32 +37,19 @@ def refresh_feedly_token():
 
     data = response.json()
     new_token  = data.get("access_token")
-    expires_in = data.get("expires_in", 0)  # seconds from now
 
     if not new_token:
         print("   ❌ Token refresh response had no access_token.")
         return None
 
-    _feedly_token        = new_token
-    _feedly_token_expiry = int(time.time() + expires_in) * 1000  # store as ms
-
-    print(f"   ✅ Token refreshed. New expiry in {expires_in // 86400} days.")
+    print(f"   ✅ Token created.")
     return new_token
-
-
-def ensure_fresh_token():
-    """Refresh the token if it will expire within TOKEN_REFRESH_THRESHOLD_SECS."""
-    now_ms      = int(time.time() * 1000)
-    threshold_ms = TOKEN_REFRESH_THRESHOLD_SECS * 1000
-
-    if _feedly_token_expiry and (_feedly_token_expiry - now_ms) < threshold_ms:
-        refresh_feedly_token()
-
 
 def get_saved_articles(since_timestamp=None):
     """Fetch articles from Feedly's Read Later / Saved stream."""
     stream_id = f"user/{FEEDLY_USER_ID}/tag/global.saved"
-
+    feedly_token = create_feedly_token()
+    
     params = {
         "streamId": stream_id,
         "count": 50,
@@ -79,7 +58,7 @@ def get_saved_articles(since_timestamp=None):
         params["newerThan"] = since_timestamp
 
     headers = {
-        "Authorization": f"Bearer {_feedly_token}"
+        "Authorization": f"Bearer {feedly_token}"
     }
 
     response = requests.get(
