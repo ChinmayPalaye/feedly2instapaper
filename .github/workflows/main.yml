@@ -1,0 +1,35 @@
+name: Feedly to Instapaper Sync
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:       # allows manual trigger from GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - name: Run sync
+        env:
+          FEEDLY_TOKEN:         ${{ secrets.FEEDLY_TOKEN }}
+          FEEDLY_REFRESH_TOKEN: ${{ secrets.FEEDLY_REFRESH_TOKEN }}
+          FEEDLY_TOKEN_EXPIRY:  ${{ secrets.FEEDLY_TOKEN_EXPIRY }}
+          FEEDLY_USER_ID:       ${{ secrets.FEEDLY_USER_ID }}
+          INSTAPAPER_USERNAME:  ${{ secrets.INSTAPAPER_USERNAME }}
+          INSTAPAPER_PASSWORD:  ${{ secrets.INSTAPAPER_PASSWORD }}
+        run: python feedly_to_instapaper.py
+
+      - name: Save state file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add feedly_sync_state.json
+          git diff --staged --quiet || git commit -m "chore: update sync state"
+          git push
