@@ -47,7 +47,7 @@ def sync():
             continue
 
         url = get_article_url(article)
-        title = get_article_title("title", "Untitled")
+        title = get_article_title(article)
 
         if not url:
             print(f"   ⚠️  Skipping article with no URL: {title}")
