@@ -1,7 +1,7 @@
 name: Feedly to Instapaper Sync
 on:
   schedule:
-    - cron: '0 * * * *'  # every hour
+    - cron: '0 21 * * *'  # run at 9pm every day
   workflow_dispatch:       # allows manual trigger from GitHub UI
 
 jobs:
